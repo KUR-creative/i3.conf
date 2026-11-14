@@ -5,6 +5,7 @@
 ## 작업 문서
 
 - [듀얼 모니터 워크스페이스 개편 계획과 검수 기록](docs/dual-monitor-workspaces.md)
+- [사용자 검수용 기능 목록과 체크리스트](docs/workspace-review-checklist.md)
 
 README에는 공통 개발 절차를 기록한다. 특정 변경의 요구사항, 결정, 진행 상황과 검수 결과는 별도 작업 문서에 기록하고 여기에서 연결한다.
 
