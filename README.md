@@ -14,7 +14,7 @@ README에는 공통 개발 절차를 기록한다. 특정 변경의 요구사항
 
 - `config`: 공통 변수와 명시적인 include 목록.
 - `config.d/base.conf`: 일반 키, 레이아웃, 시작 프로그램, bar.
-- `config.d/workspaces.conf`: 워크스페이스 변수, 모니터 배정, 전환·이동 단축키.
+- `config.d/workspaces.conf`: 워크스페이스 변수·공통 명령·모니터 배정·전환·이동을 섹션으로 묶은 단일 파일.
 - `scripts/`: 실제 필요성이 확인된 보조 프로그램. 필요한 단계에서만 생성한다.
 - `docs/`: 작업별 계획, 결정 사항, 검수 기록.
 - `tests/`: 이전 도구의 단위 테스트와 가상 i3 키 입력 회귀 테스트. [실행 안내](tests/README.md).
