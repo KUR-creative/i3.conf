@@ -34,6 +34,7 @@ python3 tests/workspace_regression.py --group switch
 python3 tests/workspace_regression.py --group history
 python3 tests/workspace_regression.py --group back
 python3 tests/workspace_regression.py --group remember
+python3 tests/workspace_regression.py --group layout
 python3 tests/workspace_regression.py --config /tmp/workspaces.conf
 ```
 
@@ -63,6 +64,9 @@ python3 tests/workspace_regression.py --config /tmp/workspaces.conf
   같은 쌍 재선택의 focus 갱신·previous 보존, Tab과 숫자의 상호 작용,
   기존 F10/0 한 줄 기록의 JSON 전환과 백틱 복원.
 - 기존 왕복·기록 검사는 각 사례를 기본 상태로 초기화해 쌍별 기억 검사와 분리한다.
+- 레이아웃 보존 8개 사례: 빈/기존 창이 있는 목적지의 splith·tabbed·stacking,
+  중첩 구조·내부 percent·창 순서 보존, 사용자 mark·floating·fullscreen·포커스 보존,
+  같은 목적지 반복, floating 창만 있는 출발지와 양쪽 모두 빈 출발지.
 - Shift 쌍 이동은 JSON 상태 전체를 바꾸지 않는지 확인한다.
 - 이동 검사에서는 같은 목적지 반복도 확인한다. 단일 이동에는 floating과
   일반 fullscreen 사례를 포함하고, 포인터를 출발 창 위에 놓은 뒤 상태가 유지되는지도 확인한다.

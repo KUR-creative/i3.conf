@@ -594,11 +594,138 @@ def history_recording(desktop):
     return count
 
 
+def layout_preserving_moves(desktop):
+    def workspace_node(name):
+        return next(node for node in walk(desktop.ipc('get_tree'))
+                    if node['type'] == 'workspace' and node['name'] == name)
+
+    def windows(node):
+        return {child['window'] for child in walk(node) if child.get('window')}
+
+    def shape(node):
+        if node.get('window'):
+            return ('window', node['window'])
+        children = node.get('nodes', [])
+        # An outer group with one child does not change the source arrangement.
+        if len(children) == 1:
+            return shape(children[0])
+        return (node['layout'], tuple((round(child.get('percent') or 0, 6), shape(child))
+                                      for child in children))
+
+    extras = []
+    try:
+        for side in ('left', 'right'):
+            for suffix in ('a', 'b'):
+                title = f'{side}-layout-{suffix}'
+                desktop.launch(['xmessage', '-name', title, '-title', title, '-buttons', 'OK:0', title])
+                desktop.wait(lambda: title in desktop.locations(), 'layout fixture ' + title)
+                desktop.ids[title] = desktop.locations()[title][1]['id']
+                extras.append(title)
+        count = 0
+        for occupied in (False, True):
+            for index, layout in enumerate(('splith', 'tabbed', 'stacking')):
+                for title, node_id in desktop.ids.items():
+                    desktop.command(f'[con_id={node_id}] fullscreen disable; '
+                                    f'[con_id={node_id}] floating disable')
+                    desktop.move(title, workspace(title.split('-')[0], 9))
+                for side in ('left', 'right'):
+                    desktop.show(workspace(side, 9))
+                sources = {'left': workspace('left', 5), 'right': workspace('right', 6)}
+                for side in ('left', 'right'):
+                    desktop.show(sources[side])
+                    for title in (side + '-source', side + '-existing',
+                                  side + '-layout-a', side + '-layout-b'):
+                        desktop.move(title, sources[side])
+                    if occupied:
+                        desktop.move(side + '-existing', workspace(side, 3))
+                    desktop.focus(side + '-source')
+                    desktop.command('split v; focus parent; mark --add _layout_build')
+                    desktop.command(f'[con_id={desktop.ids[side + "-layout-a"]}] '
+                                    'move container to mark _layout_build; unmark _layout_build')
+                    desktop.focus(side + '-source')
+                    desktop.command('resize grow height 0 px or 17 ppt; focus parent; '
+                                    'resize grow width 0 px or 13 ppt')
+                    root = workspace_node(sources[side])
+                    desktop.command(f'[con_id={root["id"]}] layout {layout}')
+                    desktop.focus(side + '-source')
+                    desktop.command('mark --add layout-user-' + side)
+                focus_side = 'left' if (index + occupied) % 2 == 0 else 'right'
+                focused = focus_side + '-source'
+                if layout == 'stacking':
+                    desktop.focus('right-layout-b')
+                    desktop.command('floating enable')
+                    desktop.focus('left-layout-b')
+                    desktop.command('fullscreen enable')
+                    focused = focus_side + '-layout-b'
+                desktop.park_pointer(focused)
+                before = {side: workspace_node(name) for side, name in sources.items()}
+                states = {title: (node['floating'], node['fullscreen_mode'], sorted(node['marks']))
+                          for title, (_, node) in desktop.locations().items()}
+                expected = {title: workspace(title.split('-')[0], 3) for title in desktop.ids}
+                recorded = desktop.history()
+                desktop.keys.press('3', shift=True, numlock=bool(index % 2))
+                desktop.check(expected, focused, {workspace(s, 3) for s in ('left', 'right')})
+                require(desktop.history() == recorded, 'Layout move changed JSON history')
+                for side in ('left', 'right'):
+                    source_ids = set().union(*(windows(child) for child in before[side]['nodes']))
+                    candidates = [node for node in walk(workspace_node(workspace(side, 3)))
+                                  if windows(node) == source_ids]
+                    require(any(shape(node) == shape(before[side]) for node in candidates),
+                            f'{side} source layout/ratios lost: occupied={occupied}, layout={layout}')
+                require({title: (node['floating'], node['fullscreen_mode'], sorted(node['marks']))
+                         for title, (_, node) in desktop.locations().items()} == states,
+                        'Floating/fullscreen/user marks changed')
+                after = {side: shape(workspace_node(workspace(side, 3))) for side in ('left', 'right')}
+                desktop.keys.press('3', shift=True, numlock=bool(index % 2))
+                desktop.check(expected, focused, {workspace(s, 3) for s in ('left', 'right')})
+                require({side: shape(workspace_node(workspace(side, 3)))
+                         for side in ('left', 'right')} == after, 'Same target changed layout again')
+                count += 1
+        # No tiling tree: one floating window or both source workspaces empty.
+        for only_float in (True, False):
+            for title, node_id in desktop.ids.items():
+                desktop.command(f'[con_id={node_id}] fullscreen disable; '
+                                f'[con_id={node_id}] floating disable')
+                desktop.move(title, workspace(title.split('-')[0], 9))
+            for side in ('left', 'right'):
+                desktop.show(workspace(side, 9))
+                desktop.show(workspace(side, 5))
+            if only_float:
+                desktop.move('right-source', workspace('right', 5))
+                desktop.focus('right-source')
+                desktop.command('floating enable')
+            else:
+                desktop.command('focus output fake-0')
+            expected = {title: name for title, (name, _) in desktop.locations().items()}
+            if only_float:
+                expected['right-source'] = workspace('right', 10)
+            recorded = desktop.history()
+            desktop.keys.press('grave', shift=True)
+            if only_float:
+                desktop.check(expected, 'right-source',
+                              {workspace(s, 10) for s in ('left', 'right')})
+            else:
+                desktop.wait(lambda: desktop.visible() == {workspace(s, 10) for s in ('left', 'right')},
+                             'empty pair move')
+                time.sleep(.1)
+                require(next(ws['name'] for ws in desktop.ipc('get_workspaces') if ws['focused'])
+                        == workspace('right', 10), 'Empty pair must finish on the right')
+                require({title: name for title, (name, _) in desktop.locations().items()} == expected,
+                        'Empty move changed hidden windows')
+            require(desktop.history() == recorded, 'Empty/floating move changed history')
+            count += 1
+        return count
+    finally:
+        for title in extras:
+            desktop.command(f'[con_id={desktop.ids.pop(title)}] kill')
+        desktop.wait(lambda: all(title not in desktop.locations() for title in extras), 'layout fixtures closed')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, default=CONFIG, help='workspace config to test; never modified')
     parser.add_argument('--xvfb', default=shutil.which('Xvfb'), help='Xvfb executable (default: PATH)')
-    parser.add_argument('--group', choices=['all', 'switch', 'single', 'pair', 'history', 'back', 'remember'], default='all')
+    parser.add_argument('--group', choices=['all', 'switch', 'single', 'pair', 'history', 'back', 'remember', 'layout'], default='all')
     parser.add_argument('--timeout', type=float, default=4, help='seconds to wait for each expected state')
     args = parser.parse_args()
     if not args.xvfb:
@@ -607,7 +734,7 @@ def main():
         if not shutil.which(tool):
             parser.error(f'Missing executable: {tool}')
     groups = {'switch': switching, 'single': single_moves, 'pair': pair_moves,
-              'back': previous_pairs, 'remember': remembered_pairs, 'history': history_recording}
+              'back': previous_pairs, 'remember': remembered_pairs, 'layout': layout_preserving_moves, 'history': history_recording}
     selected = groups if args.group == 'all' else {args.group: groups[args.group]}
     with Desktop(args.config.resolve(), args.xvfb, args.timeout) as desktop:
         for name, test in selected.items():

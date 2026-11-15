@@ -58,11 +58,7 @@ def read_history(state):
     return {'previous': previous, 'focus': focus}
 
 
-def switch(target, state):
-    history = read_history(state)
-    restoring = target == 'previous'
-    if restoring and history['previous'] is None:
-        return
+def visible_workspaces():
     spaces = ipc('get_workspaces')
     visible = [ws for ws in spaces if ws['visible']]
     current = next((ws for ws in spaces if ws['focused']), None)
@@ -70,6 +66,15 @@ def switch(target, state):
             or current is None or any(ws['name'] not in NAMES for ws in visible)
             or sum(NAMES[ws['name']].startswith('F') for ws in visible) != 1):
         raise RuntimeError('Expected one known left and one known right workspace on two outputs')
+    return visible, current
+
+
+def switch(target, state):
+    history = read_history(state)
+    restoring = target == 'previous'
+    if restoring and history['previous'] is None:
+        return
+    visible, current = visible_workspaces()
     departure = NAMES[current['name']]
     history['focus'][pair_number(departure) - 1] = departure
     target = history['previous'] if restoring else history['focus'][pair_number(target) - 1]
@@ -94,10 +99,47 @@ def switch(target, state):
     state.flush()
 
 
+def walk(node):
+    yield node
+    for child in node.get('nodes', []) + node.get('floating_nodes', []):
+        yield from walk(child)
+
+
+def move_pair(target):
+    visible, _ = visible_workspaces()
+    tree = ipc('get_tree')
+    roots = {node['name']: node for node in walk(tree) if node['type'] == 'workspace'}
+    focused = next((node['id'] for node in walk(tree)
+                    if node.get('focused') and node['type'] == 'con'), None)
+    number = pair_number(target)
+    left, right = LABELS[f'F{number}'], LABELS[str(number % 10)]
+    commands = []
+    for space in visible:
+        root = roots[space['name']]
+        destination = left if NAMES[space['name']].startswith('F') else right
+        if space['name'] != destination and (root['nodes'] or root['floating_nodes']):
+            # Moving the workspace container makes i3 wrap its tiling tree as one group.
+            commands.append(f'[con_id={root["id"]}] move --no-auto-back-and-forth '
+                            f'container to workspace number {destination}')
+    if commands:
+        ipc('command', '; '.join(commands))
+    ipc('command', f'workspace --no-auto-back-and-forth number {left}; '
+                   f'workspace --no-auto-back-and-forth number {right}')
+    # A separate request follows the exact original container after both views are shown.
+    if focused is not None:
+        ipc('command', f'[con_id={focused}] focus')
+    if {space['name'] for space in ipc('get_workspaces') if space['visible']} != {left, right}:
+        raise RuntimeError('Pair move did not reach the expected workspaces')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('target', choices=['reset', 'previous'] + [str(n) for n in range(10)])
-    target = parser.parse_args().target
+    parser.add_argument('--move', action='store_true', help='move both visible layouts without updating history')
+    args = parser.parse_args()
+    target = args.target
+    if args.move and target in ('reset', 'previous'):
+        parser.error('--move requires a pair number')
     path = state_path()
     # Reset existing contents without replacing the inode used by waiting callers.
     if target in ('reset', 'previous') and not path.exists():
@@ -106,7 +148,9 @@ def main():
     with os.fdopen(fd, 'r+', encoding='utf-8') as state:
         fcntl.flock(state, fcntl.LOCK_EX)
         os.fchmod(state.fileno(), 0o600)
-        if target == 'reset':
+        if args.move:
+            move_pair(target)
+        elif target == 'reset':
             state.truncate(0)
         else:
             switch(target, state)
