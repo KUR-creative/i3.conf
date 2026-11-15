@@ -97,3 +97,21 @@ config의 목적지 값을 테스트에서 추출해 정답으로 사용하지 �
 그 변형 코드·실패용 config·뮤테이션 실행기는 저장소에 남기지 않는다.
 검사한 결함과 결과는 작업 문서에 기록한다. 앞으로 테스트를 변경할 때도
 실패해야 하는 조건을 임시 사본으로 확인한 뒤 정상 설정의 통과를 재확인한다.
+
+## 앱 실행 모드의 터미널 분기
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 tests/application_shortcuts_regression.py --xvfb /path/to/Xvfb
+```
+
+기존 가상 i3 검사 도구를 재사용하며 xdotool, xprop, xev, stdbuf가 필요하다.
+실제 Ptyxis 대신 인자·환경만 기록하는 임시 실행 파일을 PATH 앞에 배치한다.
+X11 키 수신용 xev 창으로 Ctrl+Shift+N을 검증하므로 사용자의 실제 창을 열지 않는다.
+
+- Mod+Enter → Enter가 두 번의 입력으로 처리되고 기본 모드로 복귀하는지.
+- Ptyxis 클래스에는 Ctrl+Shift+N만 전달하고 일반 실행을 중복하지 않는지.
+- 다른 앱과 빈 공간에서 일반 실행이 한 번이고 헤더바 환경을 유지하는지.
+- Escape는 아무 앱도 실행하지 않는지.
+
+`--shortcuts /tmp/shortcuts.conf`로 임시 설정 사본도 검사할 수 있다.
+실제 Bash 경로 알림과 Ptyxis의 디렉터리 계승은 사용자 검수로 확인한다.
