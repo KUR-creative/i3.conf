@@ -5,6 +5,7 @@
 - 개인 앱 실행 단축키를 `config.d/shortcuts.conf`에 모으고 메인 `config`에서 명시적으로 include한다.
 - 기존 터미널 실행 정의를 base.conf에서 옮기고, Mod+Enter를 앱 실행 모드 진입 키로 사용한다.
 - Mod+Enter를 누르고 키를 뗀 다음 Enter는 새 Ptyxis 창에서 `~/.local/bin/codex --not-so-yolo`를 실행한다.
+- Codex는 `bash -c` 안에서 실행하고, 종료 후 `exec bash -i`로 같은 창과 작업 디렉터리에 대화형 셸을 남긴다. Codex가 오류로 종료해도 셸을 실행한다.
 - 같은 모드에서 t는 새 터미널, b는 새 Chrome Stable 창을 연다. 실행 후 기본 모드로 돌아온다.
 - Escape는 실행하지 않고 기본 모드로 돌아온다. 기존 기본 모드의 Mod+b는 제거한다.
 - 실행 모드 이름에 키 안내를 넣어 i3bar에 표시한다.
@@ -16,13 +17,14 @@
 - 설치된 Ptyxis 매뉴얼에서 `-- PROGRAM ARGUMENTS` 실행 형식을 확인했다.
 - `codex --not-so-yolo --help`: 종료 코드 0으로 옵션 인식 확인.
 - `git diff --check`: 통과.
+- Codex 대체 명령의 정상 종료·오류 종료 모두에서 후속 `bash -i` 실행과 작업 디렉터리 유지를 확인했다.
 - 실제 키 입력은 사용자 검수 대기.
 
 ## 적용과 검수
 
 1. Mod+Shift+c로 설정을 리로드한다.
 2. Mod+Enter를 누르고 키를 떼면 bar에 앱 실행 안내가 표시되는지 확인한다.
-3. Enter로 새 터미널에서 Codex가 실행되는지 확인한다.
+3. Enter로 새 터미널에서 Codex가 실행되는지 확인하고, Codex 종료 후 같은 창에 Bash 프롬프트가 남는지 확인한다.
 4. 다시 Mod+Enter → t로 새 터미널, Mod+Enter → b로 새 크롬 창이 열리는지 확인한다.
 5. 각 실행 후 기본 모드로 돌아오는지, Mod+Enter → Escape는 창을 열지 않고 취소하는지 확인한다.
 6. Mod+v → Mod+Enter → t는 위아래, Mod+g → Mod+Enter → b는 좌우로 배치되는지 확인한다.
