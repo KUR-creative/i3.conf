@@ -31,6 +31,7 @@ python3 tests/workspace_regression.py --xvfb /path/to/Xvfb
 python3 tests/workspace_regression.py --group single
 python3 tests/workspace_regression.py --group pair
 python3 tests/workspace_regression.py --group switch
+python3 tests/workspace_regression.py --group history
 python3 tests/workspace_regression.py --config /tmp/workspaces.conf
 ```
 
@@ -49,6 +50,10 @@ python3 tests/workspace_regression.py --config /tmp/workspaces.conf
 - Shift 단일 이동 40개 조합(오른쪽은 키패드, 왼쪽은 F키): 같은/다른 모니터에서 출발, 대상 창만 이동,
   기존 창 보존, 원래 창 포커스, 반대 표시 공간 보존, 사용자 mark 보존 및 내부 mark 정리.
 - Shift 쌍 이동 22개 조합(메인 숫자 전체 및 Shift+백틱, Num Lock 두 상태): 양쪽 모든 창 합류, 기존 목적지 창 유지, 원래 창 포커스.
+- 이력 기록 40개 조합: 메인 숫자 전환 시 좌우 출발 이름 한 줄 기록, F10/0 대응,
+  같은 쌍 재선택 시 보존, 파일 권한 0600. 개별 전환 시 보존, reload 시 보존,
+  새 세션 reset, 관리하지 않는 공간에서 실패 시 기록·표시 유지도 검사한다.
+- Shift 쌍 이동은 이전 위치 파일을 바꾸지 않는지 확인한다.
 - 이동 검사에서는 같은 목적지 반복도 확인한다. 단일 이동에는 floating과
   일반 fullscreen 사례를 포함하고, 포인터를 출발 창 위에 놓은 뒤 상태가 유지되는지도 확인한다.
 
@@ -58,7 +63,8 @@ config의 목적지 값을 테스트에서 추출해 정답으로 사용하지 �
 ## 격리와 한계
 
 - 운영 파일은 읽기만 하고 임시 디렉터리에 테스트 config를 만든다.
-- workspace 파일의 출력 이름만 fake-0/fake-1로 바꾸고, 최소 진입 설정에
+- workspace 파일의 출력 이름을 fake-0/fake-1로 바꾸고 보조 프로그램 경로를
+  이 저장소의 절대 경로로 지정한다. 상태 파일은 테스트 전용 runtime에만 쓴다. 최소 진입 설정에
   Mod4, 마우스 포커스 추적, 자동 back-and-forth를 설정해 실제 바인딩을 로드한다.
 - 기본 base.conf의 앱 실행·bar·기타 단축키까지 검증하는 테스트는 아니다.
 - Xvfb의 `-displayfd`로 빈 디스플레이를 할당한다. 실제 DISPLAY·i3 소켓·X 인증

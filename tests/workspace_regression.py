@@ -16,6 +16,7 @@ import time
 CONFIG = Path(__file__).resolve().parents[1] / 'config.d/workspaces.conf'
 KEYPAD = [87, 88, 89, 83, 84, 85, 79, 80, 81, 90]
 MARK = '_i3_move_follow'
+PAIR_SCRIPT = CONFIG.parents[1] / 'scripts/workspace-pair.py'
 
 
 def require(condition, message):
@@ -84,6 +85,7 @@ class Desktop:
                     os.close(write_fd)
             self.env['DISPLAY'] = ':' + number
             source = self.source.read_text().replace('DP-1', 'fake-0').replace('HDMI-0', 'fake-1')
+            source = source.replace('~/.config/i3/scripts/workspace-pair.py', str(PAIR_SCRIPT))
             config = self.root / 'config'
             config.write_text('font pango:monospace 8\nset $mod Mod4\n'
                               'fake-outputs 800x600+0+0,800x600+800+0\n'
@@ -122,6 +124,13 @@ class Desktop:
     def ipc(self, kind):
         return json.loads(subprocess.check_output(['i3-msg', '-r', '-t', kind], env=self.env,
                                                  text=True, stderr=subprocess.DEVNULL, timeout=5))
+
+    @property
+    def history_path(self):
+        return Path(self.env['XDG_RUNTIME_DIR']) / 'i3-workspace-pair'
+
+    def history(self):
+        return self.history_path.read_text() if self.history_path.exists() else ''
 
     def command(self, command):
         replies = json.loads(subprocess.check_output(['i3-msg', command], env=self.env,
@@ -258,6 +267,7 @@ def switching(desktop):
                 else:
                     views[side] = workspace(side, n)
                 desktop.wait(lambda: desktop.visible() == set(views.values()), key + ' switch')
+                time.sleep(.1)
                 require(next(w for w in desktop.ipc('get_workspaces') if w['focused'])['name']
                         == workspace(side, n), 'Wrong focused workspace')
                 require({t: v[0] for t, v in desktop.locations().items()} == before, 'Switch moved windows')
@@ -281,6 +291,7 @@ def switching(desktop):
             desktop.keys.press('grave', numlock=numlock)
             desktop.wait(lambda: desktop.visible() == {workspace('left', 10), workspace('right', 10)},
                          'grave alias for pair 10')
+            time.sleep(.1)
             require(next(w for w in desktop.ipc('get_workspaces') if w['focused'])['name']
                     == workspace('right', 10), 'Grave must focus right')
         require({t: v[0] for t, v in desktop.locations().items()} == before, 'Grave moved windows')
@@ -339,11 +350,61 @@ def pair_moves(desktop):
             desktop.park_pointer(focus)
             expected = {t: workspace(t.split('-')[0], n) for t in desktop.ids}
             visible = {workspace(s, n) for s in ('left', 'right')}
+            recorded = desktop.history()
             desktop.keys.press(key, shift=True, numlock=numlock)
             desktop.check(expected, focus, visible)
             desktop.keys.press(key, shift=True, numlock=numlock)
             desktop.check(expected, focus, visible)
+            require(desktop.history() == recorded, 'Shift pair move changed previous location')
             count += 1
+    return count
+
+
+def history_recording(desktop):
+    count = 0
+    for numlock in (False, True):
+        for side in ('left', 'right'):
+            for n in range(1, 11):
+                destination = n % 10 + 1
+                for s in ('left', 'right'):
+                    desktop.move(f'{s}-source', workspace(s, n))
+                    desktop.move(f'{s}-existing', workspace(s, destination))
+                    desktop.show(workspace(s, n))
+                focus = side + '-source'
+                desktop.park_pointer(focus)
+                expected = {t: v[0] for t, v in desktop.locations().items()}
+                label = f'F{n}' if side == 'left' else str(n % 10)
+                desktop.keys.press(str(destination % 10), numlock=numlock)
+                desktop.check(expected, 'right-existing',
+                              {workspace(s, destination) for s in ('left', 'right')})
+                desktop.wait(lambda: desktop.history() == label + '\n', 'departure label ' + label)
+                require(desktop.history_path.stat().st_mode & 0o777 == 0o600, 'History permissions')
+                desktop.keys.press(str(destination % 10), numlock=numlock)
+                desktop.check(expected, 'right-existing',
+                              {workspace(s, destination) for s in ('left', 'right')})
+                require(desktop.history() == label + '\n', 'Same pair overwrote previous location')
+                count += 1
+    # Individual workspace and mouse focus changes must not update pair history.
+    recorded = desktop.history()
+    desktop.keys.press('F2')
+    desktop.wait(lambda: workspace('left', 2) in desktop.visible(), 'independent left switch')
+    desktop.keys.press(KEYPAD[4])
+    desktop.wait(lambda: workspace('right', 5) in desktop.visible(), 'independent right switch')
+    require(desktop.history() == recorded, 'Independent switching changed pair history')
+    # Reload preserves history; explicit new-session reset clears it.
+    desktop.command('reload')
+    time.sleep(.15)
+    require(desktop.history() == recorded, 'Reload cleared history')
+    subprocess.run([sys.executable, str(PAIR_SCRIPT), 'reset'], env=desktop.env,
+                   check=True, timeout=5)
+    require(desktop.history() == '', 'New-session reset did not clear history')
+    # An unmanaged workspace must not produce a false pair record or switch.
+    desktop.command('rename workspace to 99:unmanaged')
+    before = desktop.visible()
+    result = subprocess.run([sys.executable, str(PAIR_SCRIPT), '3'], env=desktop.env,
+                            capture_output=True, text=True, timeout=5)
+    require(result.returncode != 0, 'Unmanaged workspace accepted')
+    require(desktop.visible() == before and desktop.history() == '', 'Failed switch changed state')
     return count
 
 
@@ -351,7 +412,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, default=CONFIG, help='workspace config to test; never modified')
     parser.add_argument('--xvfb', default=shutil.which('Xvfb'), help='Xvfb executable (default: PATH)')
-    parser.add_argument('--group', choices=['all', 'switch', 'single', 'pair'], default='all')
+    parser.add_argument('--group', choices=['all', 'switch', 'single', 'pair', 'history'], default='all')
     parser.add_argument('--timeout', type=float, default=4, help='seconds to wait for each expected state')
     args = parser.parse_args()
     if not args.xvfb:
@@ -359,7 +420,7 @@ def main():
     for tool in ('i3', 'i3-msg', 'xmessage'):
         if not shutil.which(tool):
             parser.error(f'Missing executable: {tool}')
-    groups = {'switch': switching, 'single': single_moves, 'pair': pair_moves}
+    groups = {'switch': switching, 'single': single_moves, 'pair': pair_moves, 'history': history_recording}
     selected = groups if args.group == 'all' else {args.group: groups[args.group]}
     with Desktop(args.config.resolve(), args.xvfb, args.timeout) as desktop:
         for name, test in selected.items():
