@@ -172,3 +172,6 @@ K2 커밋만 revert하고 reload하면 K1 단계로 돌아간다. 실제 창 이
 
 전체 항목은 [사용자 검수표](workspace-review-checklist.md)에 기록한다.
 복구는 K4 커밋만 revert하고 reload한다. 이미 이동한 창은 직접 되돌린다.
+
+다음 기능은 [Mod+Tab 이전 쌍 복원 계획](previous-workspace-pair.md)으로 별도 관리한다.
+현재 배치 검수를 마친 뒤 진행하며 아직 구현하지 않았다.
