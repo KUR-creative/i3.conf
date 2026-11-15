@@ -84,7 +84,7 @@ Shift 이동은 previous와 focus를 모두 즉시 갱신하지 않는다. 옮�
   초기화를 재실행하지 않는다. 재부팅 후에는 유지하지 않는 임시 이력이다.
 - 파일 자체의 flock 잠금 안에서 읽기·전환·재작성을 처리한다. 잠근 파일을 rename으로
   교체하지 않는다. 비정상 종료로 내용이 손상되면 기본값으로 다시 시작할 수 있다.
-- 보조 프로그램은 `scripts/workspace-pair.py` 하나다. Python 표준 라이브러리와
+- 보조 프로그램은 `scripts/workspace-pair.py` 하나이며 [ws CLI](ws-cli.md)로 설치해 i3와 외부 앱이 함께 호출한다. Python 표준 라이브러리와
   기존 i3-msg만 사용한다. 서비스·pip 패키지·i3ipc 라이브러리·jq는 추가하지 않는다.
 
 ## 기존 파일과 잘못된 상태

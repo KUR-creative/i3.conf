@@ -86,6 +86,7 @@ class Desktop:
             self.env['DISPLAY'] = ':' + number
             source = self.source.read_text().replace('DP-1', 'fake-0').replace('HDMI-0', 'fake-1')
             source = source.replace('~/.config/i3/scripts/workspace-pair.py', str(PAIR_SCRIPT))
+            source = source.replace('~/.local/bin/ws', str(PAIR_SCRIPT))
             config = self.root / 'config'
             config.write_text('font pango:monospace 8\nset $mod Mod4\n'
                               'fake-outputs 800x600+0+0,800x600+800+0\n'

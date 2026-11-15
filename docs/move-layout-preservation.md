@@ -28,7 +28,7 @@ i3 기본 명령으로 실제 이동을 수행한다. 출발 워크스페이스�
 - `scripts/workspace-pair.py`에 `--move` 옵션과 `move_pair()`를 추가했다.
   기존 보조 프로그램 하나를 확장했으며 새 스크립트·서비스·패키지는 없다.
 - config의 메인 Shift+숫자와 Shift+백틱을 이 옵션에 연결했다.
-  예: `python3 ~/.config/i3/scripts/workspace-pair.py 3 --move`.
+  예: `ws 3 --move`. [CLI 설치·사용법](ws-cli.md)을 따른다.
 - 단일 창 이동에 사용하는 공통 mark 명령은 유지했다. 더 이상 쓰지 않는
   `$pair_move_all`은 제거했다.
 

@@ -133,9 +133,25 @@ def move_pair(target):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('target', choices=['reset', 'previous'] + [str(n) for n in range(10)])
-    parser.add_argument('--move', action='store_true', help='move both visible layouts without updating history')
+    parser = argparse.ArgumentParser(
+        prog='ws',
+        description='Switch paired i3 workspaces and restore their remembered focus.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Examples:
+  ws 3          Show F3 + 3 and restore that pair's last focused side/window.
+  ws 0          Show F10 + 0 (the tenth pair).
+  ws previous   Return to the previous pair; repeat to toggle back.
+  ws 3 --move   Move both visible layout groups to pair 3 and follow focus.
+  ws reset      Clear session history and remembered sides.
+
+State: $XDG_RUNTIME_DIR/i3-workspace-pair (JSON; initial side is right).
+Switches update history; --move preserves it. Run in the active i3 session.
+""")
+    parser.add_argument('target', metavar='TARGET',
+                        choices=['reset', 'previous'] + [str(n) for n in range(10)],
+                        help='pair number 1..9 or 0, previous, or reset')
+    parser.add_argument('--move', action='store_true',
+                        help='move both visible layout groups; requires a pair number')
     args = parser.parse_args()
     target = args.target
     if args.move and target in ('reset', 'previous'):
@@ -160,5 +176,5 @@ if __name__ == '__main__':
     try:
         main()
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
-        print(f'workspace-pair: {error}', file=sys.stderr)
+        print(f'ws: {error}', file=sys.stderr)
         sys.exit(1)

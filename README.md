@@ -4,6 +4,8 @@
 
 ## 작업 문서
 
+- [ws CLI 사용법·로컬 링크 설치](docs/ws-cli.md)
+
 - [개인 앱 실행 단축키 분리](docs/application-shortcuts.md)
 - [검수 통과: 숫자키·키패드 역할 교체](docs/keybinding-remap.md)
 - [검수 통과: 이전 쌍·숫자키 쌍별 포커스 복원](docs/previous-workspace-pair.md)
