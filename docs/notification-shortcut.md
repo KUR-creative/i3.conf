@@ -1,13 +1,12 @@
 # dunst 알림 하나 닫기 단축키
 
-## 제안과 상태
+## 구현과 상태
 
-사용자가 `dunstctl close` 단축키 추가와 키 추천을 요청했다.
-추천은 **Mod+BackSpace**다. 삭제/지우기 의미와 연결되고 현재 i3 설정에는
-이 조합이 없다. 기존 Mod+Shift+q는 창 닫기이므로 그대로 둔다.
-운영 바인딩은 아직 추가하지 않았으며 추천과 구현 계획만 기록한다.
+사용자 지시에 따라 **Mod+BackSpace**를 추가했다. 표시된 알림 하나를 닫는다.
+기존 키와 중복되지 않으며 Mod+Shift+q는 기존 창 닫기로 유지한다.
+설정 문법·변경 범위 검사를 완료했고 사용자 리로드·실제 검수를 기다린다.
 
-예정 config는 `config.d/base.conf`의 앱 조작 단축키 부근에 한 줄 추가한다:
+`config.d/base.conf`의 창 닫기 단축키 다음에 추가했다:
 
 ```i3
 bindsym $mod+BackSpace exec --no-startup-id dunstctl close
@@ -18,7 +17,7 @@ bindsym $mod+BackSpace exec --no-startup-id dunstctl close
 
 ## 검수
 
-1. 설정 문법과 기존 키 충돌을 확인하고 작은 기능 커밋을 만든다.
+1. 설정 문법과 기존 키 충돌 검사 통과. 사용자 적용 명령은 `i3-msg reload`다.
 2. 사용자가 reload한 뒤 동시에 표시된 임시 알림 두 개를 준비한다.
 3. Mod+BackSpace 한 번에 하나만 닫히고 앱 창은 그대로인지 확인한다.
 4. 알림이 없는 상태에서도 다른 동작을 하지 않는지 확인한다.
