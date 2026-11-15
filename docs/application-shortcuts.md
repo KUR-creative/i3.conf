@@ -3,21 +3,30 @@
 ## 변경
 
 - 개인 앱 실행 단축키를 `config.d/shortcuts.conf`에 모으고 메인 `config`에서 명시적으로 include한다.
-- 기존 Mod+Enter의 `ptyxis --new-window`를 base.conf에서 옮긴다.
-- Mod+b에 `google-chrome-stable --new-window`를 연결한다.
+- 기존 터미널 실행 정의를 base.conf에서 옮기고, Mod+Enter를 앱 실행 모드 진입 키로 사용한다.
+- Mod+Enter를 누르고 키를 뗀 다음 Enter는 새 Ptyxis 창에서 `~/.local/bin/codex --not-so-yolo`를 실행한다.
+- 같은 모드에서 t는 새 터미널, b는 새 Chrome Stable 창을 연다. 실행 후 기본 모드로 돌아온다.
+- Escape는 실행하지 않고 기본 모드로 돌아온다. 기존 기본 모드의 Mod+b는 제거한다.
+- 실행 모드 이름에 키 안내를 넣어 i3bar에 표시한다.
 
 ## 검증
 
 - `i3 -C -c ~/.config/i3/config`: 통과. 샌드박스의 런타임 로그 경로 제한 때문에 임시 XDG_RUNTIME_DIR을 사용했다.
-- Mod+Return과 Mod+b는 각각 한 번만 정의되어 있다.
+- Mod+Return은 모드 진입으로 한 번 정의되어 있으며, 기본 모드에 Mod+b는 없다.
+- 설치된 Ptyxis 매뉴얼에서 `-- PROGRAM ARGUMENTS` 실행 형식을 확인했다.
+- `codex --not-so-yolo --help`: 종료 코드 0으로 옵션 인식 확인.
 - `git diff --check`: 통과.
 - 실제 키 입력은 사용자 검수 대기.
 
 ## 적용과 검수
 
 1. Mod+Shift+c로 설정을 리로드한다.
-2. Mod+Enter로 새 터미널 창이 열리는지 확인한다.
-3. Mod+b로 크롬 창이 열리는지 확인하고, 다시 눌러 새 창이 추가되는지 확인한다.
+2. Mod+Enter를 누르고 키를 떼면 bar에 앱 실행 안내가 표시되는지 확인한다.
+3. Enter로 새 터미널에서 Codex가 실행되는지 확인한다.
+4. 다시 Mod+Enter → t로 새 터미널, Mod+Enter → b로 새 크롬 창이 열리는지 확인한다.
+5. 각 실행 후 기본 모드로 돌아오는지, Mod+Enter → Escape는 창을 열지 않고 취소하는지 확인한다.
+6. Mod+v → Mod+Enter → t는 위아래, Mod+g → Mod+Enter → b는 좌우로 배치되는지 확인한다.
+7. 기본 모드의 Mod+b는 크롬을 실행하지 않는지 확인한다.
 
 ## 되돌리기
 
