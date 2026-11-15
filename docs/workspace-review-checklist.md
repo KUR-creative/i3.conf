@@ -128,7 +128,9 @@ i3-msg -t get_marks
 - [ ] 39. 같은 쌍 재선택은 현재 focus만 갱신하고 previous는 유지한다. Mod+Tab 왕복도 정상이다.
 - [ ] 40. 기존 한 줄 파일은 다음 성공한 전환에서 JSON으로 변환되고 이전 위치가 보존된다. Shift 이동은 상태를 즉시 바꾸지 않는다.
 
-## 9. Shift 쌍 이동의 레이아웃 보존 — 신규 검수 대기
+## 9. Shift 쌍 이동의 레이아웃 보존 — 사용자 검수 통과
+
+사용자가 잘 작동한다고 확인했다(`2e93021`). 개별 체크박스는 상세 검수 기록용으로 남긴다.
 
 [레이아웃 보존 문서](move-layout-preservation.md)의 재현 순서를 따른다.
 
@@ -160,4 +162,4 @@ i3-msg -t get_marks
 관련 문서: [계획·결정·검수 이력](dual-monitor-workspaces.md),
 [자동 회귀 테스트 실행](../tests/README.md).
 
-현재 검수 대상: [Shift 쌍 이동 시 레이아웃 보존](move-layout-preservation.md). 자동 검사 후 실제 검수를 기다린다.
+구현·사용자 검수 완료: [Shift 쌍 이동 시 레이아웃 보존](move-layout-preservation.md). 재로그인 등 보고되지 않은 세부 항목은 별도 확인 대상으로 남긴다.
