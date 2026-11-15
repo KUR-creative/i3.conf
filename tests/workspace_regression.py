@@ -317,7 +317,7 @@ def single_moves(desktop):
                 expected = {t: v[0] for t, v in desktop.locations().items()}
                 expected[moving] = destination
                 views[side] = destination
-                key = f'F{n}' if side == 'left' else (KEYPAD[0] if n == 1 else str(n % 10))
+                key = f'F{n}' if side == 'left' else KEYPAD[n - 1]
                 desktop.keys.press(key, shift=True, numlock=numlock)
                 desktop.check(expected, moving, set(views.values()))
                 require('user-existing' in desktop.locations()[moving][1]['marks'], 'User mark lost')
@@ -330,7 +330,7 @@ def single_moves(desktop):
 def pair_moves(desktop):
     count = 0
     for numlock in (False, True):
-        for n, code in enumerate(KEYPAD, 1):
+        for n, key in [(n, str(n % 10)) for n in range(1, 11)] + [(10, 'grave')]:
             for side in ('left', 'right'):
                 for role, number in [('source', n % 10 + 1), ('existing', n)]:
                     desktop.move(f'{side}-{role}', workspace(side, number))
@@ -339,7 +339,6 @@ def pair_moves(desktop):
             desktop.park_pointer(focus)
             expected = {t: workspace(t.split('-')[0], n) for t in desktop.ids}
             visible = {workspace(s, n) for s in ('left', 'right')}
-            key = '1' if n == 1 else code
             desktop.keys.press(key, shift=True, numlock=numlock)
             desktop.check(expected, focus, visible)
             desktop.keys.press(key, shift=True, numlock=numlock)
