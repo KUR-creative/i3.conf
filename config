@@ -3,4 +3,5 @@
 set $mod Mod4
 
 include ~/.config/i3/config.d/base.conf
+include ~/.config/i3/config.d/shortcuts.conf
 include ~/.config/i3/config.d/workspaces.conf
