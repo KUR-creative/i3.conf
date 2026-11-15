@@ -39,6 +39,21 @@
 
 ## 적용과 검수
 
+### Ptyxis 헤더바와 세션 복원 (2026-11-15)
+
+- Enter 실행 줄에 `G_RESOURCE_OVERLAYS`를 지정해 `~/.config/ptyxis-no-header/ptyxis-window.ui`를 사용한다. 원본 실행 파일은 수정하지 않는다.
+- UI 복사본의 `AdwHeaderBar` (`header_bar`)에 `visible=false`를 추가했다. 사용자가 헤더바 제거 동작을 확인했다.
+- 참고·UI 재생성 스크립트는 `/home/kur/dev/env.kur-big/essential/ptyxis-no-header.sh`다. i3는 이 스크립트를 호출하지 않는다. Ptyxis 업데이트 후 필요하면 다시 실행한다.
+- `.bashrc`는 수정하지 않는다. 이미 실행 중인 Ptyxis는 처음 실행된 환경을 유지하므로, 새 실행 줄의 환경변수가 기존 프로세스로 전달되지는 않는다.
+- 조사 시 Ptyxis 프로세스 하나, 창 13개, `restore-session=true`를 확인했다. 저장된 창의 복원은 중복 창 발생의 유력한 원인이다. 당시 최초 실행 과정은 재현하지 않았다.
+- Ptyxis 소스는 일반 프로세스 최초 명령 처리 시 세션을 복원하고, `--standalone`에서는 그 복원을 건너뛴다. `--standalone` 자체가 세션 복원의 원인이라는 이전 설명은 잘못됐다.
+- `restore-session=false`를 실제 GSettings에 적용했다. i3 일반 시작 시에도 같은 값을 설정하도록 `exec`를 추가했다. `reload`는 일반 `exec`를 다시 실행하지 않는다.
+- 실행 방식은 공유 프로세스에 `--new-window`를 요청한다. 세션 복원을 꺼서 다음 프로세스 시작 때 저장된 창을 다시 열지 않도록 한다. 기존 창과 작업은 종료하지 않는다.
+- 검증: 실행 줄과 같은 환경·명령에 고유 테스트 제목만 추가해 창 수가 13→14로 정확히 하나 증가함을 확인했다. 테스트 창만 종료했다. 설정 문법, 셸 문법, `git diff --check` 통과.
+- 남은 사용자 검수: Mod+Enter → Enter로 창 하나가 열리는지 확인. 이후 자연스럽게 모든 Ptyxis 작업을 마치고 다시 실행했을 때 과거 창들이 복원되지 않는지 확인. 첫 실행 복원 동작은 자동 검증에서 기존 작업을 종료해 재현하지 않았다.
+- 되돌릴 때 Enter 실행 줄에서 환경변수를 제거하고, 세션 복원도 원하면 `gsettings set org.gnome.Ptyxis restore-session true`로 되돌린다. i3의 해당 `exec`도 제거한다. 사용자 설정 리로드 후 향후 실행에 적용한다.
+- 소스 참고: https://gitlab.gnome.org/chergert/ptyxis/-/blob/main/src/ptyxis-application.c
+
 1. Mod+Shift+c로 설정을 리로드한다.
 2. Mod+Enter를 누르고 키를 떼면 bar에 앱 실행 안내가 표시되는지 확인한다.
 3. c로 새 터미널에서 Codex가 실행되는지 확인하고, Codex 종료 후 같은 창에 Bash 프롬프트가 남는지 확인한다.
