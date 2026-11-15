@@ -4,8 +4,9 @@
 
 ## 작업 문서
 
-- [현재 검수 대기: 숫자키·키패드 역할 교체](docs/keybinding-remap.md)
+- [검수 통과: 숫자키·키패드 역할 교체](docs/keybinding-remap.md)
 - [다음 계획: Mod+Tab 이전 워크스페이스 쌍 복원](docs/previous-workspace-pair.md)
+- [보류한 개선: Shift 이동 시 레이아웃 보존](docs/move-layout-preservation.md)
 
 - [듀얼 모니터 워크스페이스 개편 계획과 검수 기록](docs/dual-monitor-workspaces.md)
 - [사용자 검수용 기능 목록과 체크리스트](docs/workspace-review-checklist.md)
