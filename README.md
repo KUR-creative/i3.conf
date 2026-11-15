@@ -5,8 +5,8 @@
 ## 작업 문서
 
 - [검수 통과: 숫자키·키패드 역할 교체](docs/keybinding-remap.md)
-- [JSON 확장 검수 대기: 이전 쌍·숫자키 쌍별 포커스 복원](docs/previous-workspace-pair.md)
-- [키 추천·추가 계획: dunst 알림 하나 닫기](docs/notification-shortcut.md)
+- [검수 통과: 이전 쌍·숫자키 쌍별 포커스 복원](docs/previous-workspace-pair.md)
+- [검수 통과: dunst 알림 하나 닫기](docs/notification-shortcut.md)
 - [보류한 개선: Shift 이동 시 레이아웃 보존](docs/move-layout-preservation.md)
 
 - [듀얼 모니터 워크스페이스 개편 계획과 검수 기록](docs/dual-monitor-workspaces.md)
