@@ -1,4 +1,4 @@
-# dunst 알림 하나 닫기 단축키
+# dunst 알림 단축키
 
 ## 구현과 상태
 
@@ -6,7 +6,7 @@
 기존 키와 중복되지 않으며 Mod+Shift+q는 기존 창 닫기로 유지한다.
 설정 문법·변경 범위 검사 통과. 사용자가 테스트 알림을 Mod+BackSpace로 닫는 동작을 확인했다. 사용자 검수 통과로 기록한다.
 
-`config.d/base.conf`의 창 닫기 단축키 다음에 추가했다:
+현재 정의는 `config.d/shortcuts.conf`에 있다. 기존 base.conf의 정의를 옮겨 중복 없이 유지한다:
 
 ```i3
 bindsym $mod+BackSpace exec --no-startup-id dunstctl close
@@ -14,6 +14,15 @@ bindsym $mod+BackSpace exec --no-startup-id dunstctl close
 
 `/usr/bin/dunstctl`이 이미 설치되어 있다. 스크립트·추가 패키지·상태 파일은 필요 없다.
 알림 전체 닫기나 알림 일시정지는 이번 기능에 포함하지 않는다.
+
+## 최신 알림 액션
+
+- Mod+Enter를 누르고 키를 뗀 다음 BackSpace를 누르면 `dunstctl action 0`을 실행하고 기본 모드로 돌아온다.
+- 설치된 dunstctl 매뉴얼에서 action 0은 표시 중인 첫 알림의 기본 액션을 실행하며, 기본 액션이 없으면 선택 메뉴를 연다고 명시한다.
+- 현재 `~/.config/dunst/dunstrc`는 `sort = update`, `origin = top-left`이므로 첫 알림은 최신 생성·갱신 알림이다. 이 정렬 설정은 이번 변경에서 수정하지 않았다.
+- 닫힌 알림의 기록을 복원해서 실행하는 기능은 아니다. 표시 중인 알림이 없으면 실행할 대상이 없다.
+- Mod+BackSpace의 하나 닫기 동작은 유지한다. 별도 알림 모드는 만들지 않는다.
+- 설정 문법·중복 검사 통과. 새 액션 단축키의 실제 사용자 검수는 대기 중이다. 기존 닫기 동작의 사용자 검수 기록과 구분한다.
 
 ## 검수
 
@@ -23,3 +32,11 @@ bindsym $mod+BackSpace exec --no-startup-id dunstctl close
 4. 알림이 없는 상태에서도 다른 동작을 하지 않는지 확인한다.
 
 실제 사용자 알림을 닫는 명령은 사전 테스트로 임의 실행하지 않는다.
+
+새 액션 단축키는 리로드 후 액션을 제공하는 테스트 알림을 두 개 준비하여,
+Mod+Enter → BackSpace가 최신 알림을 대상으로 하는지 확인한다.
+요청 후 기본 모드로 돌아오는지, Mod+Enter → Escape는 취소하는지,
+Mod+BackSpace는 기존대로 액션 없이 하나만 닫는지도 확인한다.
+실제 사용자 알림의 액션은 자동 검증 중 임의 실행하지 않는다.
+
+되돌리기는 이 변경 커밋만 `git revert`한 뒤 리로드한다.

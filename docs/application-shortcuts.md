@@ -1,5 +1,21 @@
 # 개인 앱 실행 단축키 분리
 
+## 현재 기능 목록
+
+`Mod`는 Super 키다. `→` 뒤의 키는 앞의 키를 뗀 다음 누른다.
+
+| 단축키 | 동작 |
+|---|---|
+| Mod+Enter → Enter | 새 터미널에서 `codex --not-so-yolo` 실행. 종료 후 같은 창·디렉터리에 Bash가 남음 |
+| Mod+Enter → t | 새 터미널 창 |
+| Mod+Enter → b | 새 Chrome Stable 창 |
+| Mod+Enter → BackSpace | 표시 중인 최신 생성·갱신 알림의 기본 액션 실행. 기본 액션이 없으면 액션 선택 메뉴 |
+| Mod+Enter → Escape | 실행 모드 취소 |
+| Mod+BackSpace | 표시 중인 알림 하나 닫기. 액션 실행 안 함 |
+
+앱 실행과 알림 액션 요청 후 기본 모드로 돌아온다. 기본 모드의 Mod+b는 사용하지 않는다.
+알림 대상과 검수 절차는 [알림 단축키 문서](notification-shortcut.md)를 참고한다.
+
 ## 변경
 
 - 개인 앱 실행 단축키를 `config.d/shortcuts.conf`에 모으고 메인 `config`에서 명시적으로 include한다.
@@ -8,6 +24,7 @@
 - Codex는 `bash -c` 안에서 실행하고, 종료 후 `exec bash -i`로 같은 창과 작업 디렉터리에 대화형 셸을 남긴다. Codex가 오류로 종료해도 셸을 실행한다.
 - 같은 모드에서 t는 새 터미널, b는 새 Chrome Stable 창을 연다. 실행 후 기본 모드로 돌아온다.
 - Escape는 실행하지 않고 기본 모드로 돌아온다. 기존 기본 모드의 Mod+b는 제거한다.
+- 알림 하나 닫기 정의를 base.conf에서 shortcuts.conf로 옮기고, 실행 모드의 BackSpace에 `dunstctl action 0`을 연결한다.
 - 실행 모드 이름에 키 안내를 넣어 i3bar에 표시한다.
 
 ## 검증
