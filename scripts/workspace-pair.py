@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Switch regular i3 workspace pairs and remember one previous workspace label."""
+"""Switch regular i3 workspace pairs and remember previous and per-pair focus."""
 import argparse
 import fcntl
 import json
@@ -31,12 +31,38 @@ def state_path():
     return runtime / 'i3-workspace-pair'
 
 
+def pair_number(label):
+    return int(label[1:]) if label.startswith('F') else (10 if label == '0' else int(label))
+
+
+def read_history(state):
+    raw = state.read().strip()
+    defaults = {'previous': None, 'focus': [str(n % 10) for n in range(1, 11)]}
+    # Upgrade the old single-label format after the next successful switch.
+    if raw in LABELS:
+        defaults['previous'] = raw
+        defaults['focus'][pair_number(raw) - 1] = raw
+        return defaults
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return defaults
+    if not isinstance(data, dict):
+        return defaults
+    previous, focus = data.get('previous'), data.get('focus')
+    if previous is not None and (not isinstance(previous, str) or previous not in LABELS):
+        return defaults
+    if (not isinstance(focus, list) or len(focus) != 10
+            or any(value not in (f'F{n}', str(n % 10)) for n, value in enumerate(focus, 1))):
+        return defaults
+    return {'previous': previous, 'focus': focus}
+
+
 def switch(target, state):
+    history = read_history(state)
     restoring = target == 'previous'
-    if restoring:
-        target = state.read().strip()
-        if target not in LABELS:
-            return
+    if restoring and history['previous'] is None:
+        return
     spaces = ipc('get_workspaces')
     visible = [ws for ws in spaces if ws['visible']]
     current = next((ws for ws in spaces if ws['focused']), None)
@@ -44,7 +70,10 @@ def switch(target, state):
             or current is None or any(ws['name'] not in NAMES for ws in visible)
             or sum(NAMES[ws['name']].startswith('F') for ws in visible) != 1):
         raise RuntimeError('Expected one known left and one known right workspace on two outputs')
-    number = int(target[1:]) if target.startswith('F') else (10 if target == '0' else int(target))
+    departure = NAMES[current['name']]
+    history['focus'][pair_number(departure) - 1] = departure
+    target = history['previous'] if restoring else history['focus'][pair_number(target) - 1]
+    number = pair_number(target)
     left, right = LABELS[f'F{number}'], LABELS[str(number % 10)]
     focused = LABELS[target]
     same = {ws['name'] for ws in visible} == {left, right}
@@ -56,10 +85,13 @@ def switch(target, state):
             or not any(ws['name'] == focused and ws['focused'] for ws in after)):
         raise RuntimeError('Pair switch did not reach the expected workspaces and focus')
     if restoring or not same:
-        state.seek(0)
-        state.write(NAMES[current['name']] + '\n')
-        state.truncate()
-        state.flush()
+        history['previous'] = departure
+    history['focus'][number - 1] = target
+    state.seek(0)
+    json.dump(history, state, indent=2)
+    state.write('\n')
+    state.truncate()
+    state.flush()
 
 
 def main():
