@@ -360,6 +360,107 @@ def pair_moves(desktop):
     return count
 
 
+
+def previous_pairs(desktop):
+    count = 0
+    # Missing, empty, and invalid records must never execute a workspace command.
+    for record in (None, '', 'F11\n', '1\nF2\n', '3; kill\n'):
+        if record is None:
+            desktop.history_path.unlink(missing_ok=True)
+        else:
+            desktop.history_path.write_text(record)
+        before = desktop.visible()
+        focus = next(ws['name'] for ws in desktop.ipc('get_workspaces') if ws['focused'])
+        desktop.keys.press('Tab')
+        time.sleep(.2)
+        require(desktop.visible() == before, 'Invalid history changed visible workspaces')
+        require(next(ws['name'] for ws in desktop.ipc('get_workspaces') if ws['focused'])
+                == focus, 'Invalid history changed focus')
+        require((desktop.history_path.read_text() if desktop.history_path.exists() else None)
+                == record, 'Invalid history was overwritten')
+    for numlock in (False, True):
+        for side in ('left', 'right'):
+            for n in range(1, 11):
+                destination = n % 10 + 1
+                for s in ('left', 'right'):
+                    desktop.move(f'{s}-source', workspace(s, n))
+                    desktop.move(f'{s}-existing', workspace(s, destination))
+                    desktop.show(workspace(s, n))
+                focus = side + '-source'
+                desktop.park_pointer(focus)
+                expected = {t: v[0] for t, v in desktop.locations().items()}
+                label = f'F{n}' if side == 'left' else str(n % 10)
+                desktop.keys.press(str(destination % 10), numlock=numlock)
+                desktop.check(expected, 'right-existing',
+                              {workspace(s, destination) for s in ('left', 'right')})
+                desktop.wait(lambda: desktop.history() == label + '\n', 'history before return')
+                desktop.park_pointer('right-existing')
+                desktop.keys.press('Tab', numlock=numlock)
+                desktop.check(expected, focus, {workspace(s, n) for s in ('left', 'right')})
+                desktop.wait(lambda: desktop.history() == str(destination % 10) + '\n',
+                             'history swapped on return')
+                desktop.park_pointer(focus)
+                desktop.keys.press('Tab', numlock=numlock)
+                desktop.check(expected, 'right-existing',
+                              {workspace(s, destination) for s in ('left', 'right')})
+                desktop.wait(lambda: desktop.history() == label + '\n', 'history after round trip')
+                count += 1
+    for numlock in (False, True):
+        for side in ('left', 'right'):
+            # Mixed source views restore the regular pair of the focused workspace.
+            for title, ws in [('left-source', workspace('left', 2)),
+                              ('right-source', workspace('right', 5)),
+                              ('left-existing', workspace('left', 3)),
+                              ('right-existing', workspace('right', 3))]:
+                desktop.move(title, ws)
+            desktop.show(workspace('left', 2))
+            desktop.show(workspace('right', 5))
+            focus = side + '-source'
+            desktop.park_pointer(focus)
+            expected = {t: v[0] for t, v in desktop.locations().items()}
+            desktop.keys.press('3', numlock=numlock)
+            desktop.check(expected, 'right-existing', {workspace(s, 3) for s in ('left', 'right')})
+            desktop.keys.press('Tab', numlock=numlock)
+            number = 2 if side == 'left' else 5
+            desktop.check(expected, focus, {workspace(s, number) for s in ('left', 'right')})
+            count += 1
+            # Multiple windows in the departure workspace: restore the last one exactly.
+            other = opposite(side)
+            for title in (side + '-source', side + '-existing'):
+                desktop.move(title, workspace(side, 10))
+            desktop.move(other + '-source', workspace(other, 10))
+            desktop.move(other + '-existing', workspace('right', 3))
+            for ws in (workspace('left', 10), workspace('right', 10)):
+                desktop.show(ws)
+            desktop.park_pointer(focus)
+            expected = {t: v[0] for t, v in desktop.locations().items()}
+            desktop.keys.press('3', numlock=numlock)
+            desktop.check(expected, other + '-existing', {workspace(s, 3) for s in ('left', 'right')})
+            desktop.keys.press('Tab', numlock=numlock)
+            desktop.check(expected, focus, {workspace(s, 10) for s in ('left', 'right')})
+            count += 1
+        # Empty departed workspaces are recreated and focused without inventing a window.
+        for ws in (workspace('left', 8), workspace('right', 8)):
+            desktop.show(ws)
+        desktop.command('focus output fake-0')
+        desktop.keys.press('3', numlock=numlock)
+        desktop.wait(lambda: desktop.history() == 'F8\n', 'empty departure')
+        desktop.keys.press('Tab', numlock=numlock)
+        desktop.wait(lambda: desktop.visible() == {workspace(s, 8) for s in ('left', 'right')}
+                     and any(ws['name'] == workspace('left', 8) and ws['focused']
+                             for ws in desktop.ipc('get_workspaces')), 'empty workspace restored')
+        desktop.wait(lambda: desktop.history() == '3\n', 'empty return saved departure')
+        # Six simultaneous invocations must serialize into three complete round trips.
+        processes = [subprocess.Popen([sys.executable, str(PAIR_SCRIPT), 'previous'], env=desktop.env,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE) for _ in range(6)]
+        for process in processes:
+            stdout, stderr = process.communicate(timeout=10)
+            require(process.returncode == 0, f'Concurrent previous failed: {stderr!r}')
+        require(desktop.visible() == {workspace(s, 8) for s in ('left', 'right')}
+                and desktop.history() == '3\n', 'Concurrent previous lost a round trip')
+        count += 1
+    return count
+
 def history_recording(desktop):
     count = 0
     for numlock in (False, True):
@@ -412,7 +513,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, default=CONFIG, help='workspace config to test; never modified')
     parser.add_argument('--xvfb', default=shutil.which('Xvfb'), help='Xvfb executable (default: PATH)')
-    parser.add_argument('--group', choices=['all', 'switch', 'single', 'pair', 'history'], default='all')
+    parser.add_argument('--group', choices=['all', 'switch', 'single', 'pair', 'history', 'back'], default='all')
     parser.add_argument('--timeout', type=float, default=4, help='seconds to wait for each expected state')
     args = parser.parse_args()
     if not args.xvfb:
@@ -420,7 +521,8 @@ def main():
     for tool in ('i3', 'i3-msg', 'xmessage'):
         if not shutil.which(tool):
             parser.error(f'Missing executable: {tool}')
-    groups = {'switch': switching, 'single': single_moves, 'pair': pair_moves, 'history': history_recording}
+    groups = {'switch': switching, 'single': single_moves, 'pair': pair_moves,
+              'back': previous_pairs, 'history': history_recording}
     selected = groups if args.group == 'all' else {args.group: groups[args.group]}
     with Desktop(args.config.resolve(), args.xvfb, args.timeout) as desktop:
         for name, test in selected.items():

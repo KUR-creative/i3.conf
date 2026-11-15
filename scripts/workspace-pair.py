@@ -32,6 +32,11 @@ def state_path():
 
 
 def switch(target, state):
+    restoring = target == 'previous'
+    if restoring:
+        target = state.read().strip()
+        if target not in LABELS:
+            return
     spaces = ipc('get_workspaces')
     visible = [ws for ws in spaces if ws['visible']]
     current = next((ws for ws in spaces if ws['focused']), None)
@@ -39,16 +44,18 @@ def switch(target, state):
             or current is None or any(ws['name'] not in NAMES for ws in visible)
             or sum(NAMES[ws['name']].startswith('F') for ws in visible) != 1):
         raise RuntimeError('Expected one known left and one known right workspace on two outputs')
-    number = 10 if target == '0' else int(target)
-    left, right = LABELS[f'F{number}'], LABELS[target]
+    number = int(target[1:]) if target.startswith('F') else (10 if target == '0' else int(target))
+    left, right = LABELS[f'F{number}'], LABELS[str(number % 10)]
+    focused = LABELS[target]
     same = {ws['name'] for ws in visible} == {left, right}
-    ipc('command', f'workspace --no-auto-back-and-forth number {left}; '
-                   f'workspace --no-auto-back-and-forth number {right}')
+    first, last = (right, left) if target.startswith('F') else (left, right)
+    ipc('command', f'workspace --no-auto-back-and-forth number {first}; '
+                   f'workspace --no-auto-back-and-forth number {last}')
     after = ipc('get_workspaces')
     if ({ws['name'] for ws in after if ws['visible']} != {left, right}
-            or not any(ws['name'] == right and ws['focused'] for ws in after)):
+            or not any(ws['name'] == focused and ws['focused'] for ws in after)):
         raise RuntimeError('Pair switch did not reach the expected workspaces and focus')
-    if not same:
+    if restoring or not same:
         state.seek(0)
         state.write(NAMES[current['name']] + '\n')
         state.truncate()
@@ -57,11 +64,11 @@ def switch(target, state):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('target', choices=['reset'] + [str(n) for n in range(10)])
+    parser.add_argument('target', choices=['reset', 'previous'] + [str(n) for n in range(10)])
     target = parser.parse_args().target
     path = state_path()
     # Reset existing contents without replacing the inode used by waiting callers.
-    if target == 'reset' and not path.exists():
+    if target in ('reset', 'previous') and not path.exists():
         return
     fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
     with os.fdopen(fd, 'r+', encoding='utf-8') as state:

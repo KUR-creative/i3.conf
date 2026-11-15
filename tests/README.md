@@ -32,6 +32,7 @@ python3 tests/workspace_regression.py --group single
 python3 tests/workspace_regression.py --group pair
 python3 tests/workspace_regression.py --group switch
 python3 tests/workspace_regression.py --group history
+python3 tests/workspace_regression.py --group back
 python3 tests/workspace_regression.py --config /tmp/workspaces.conf
 ```
 
@@ -53,6 +54,10 @@ python3 tests/workspace_regression.py --config /tmp/workspaces.conf
 - 이력 기록 40개 조합: 메인 숫자 전환 시 좌우 출발 이름 한 줄 기록, F10/0 대응,
   같은 쌍 재선택 시 보존, 파일 권한 0600. 개별 전환 시 보존, reload 시 보존,
   새 세션 reset, 관리하지 않는 공간에서 실패 시 기록·표시 유지도 검사한다.
+- Mod+Tab 왕복 50개 조합: 좌우 출발·모든 쌍·Num Lock 두 상태, F10/0,
+  혼합 화면의 정규 쌍 복원, 여러 창 중 마지막 창 복원, 빈 공간 재생성.
+  파일 없음·빈 값·잘못된 값·여러 줄·명령 삽입 문자열은 전환하지 않는지도 검사한다.
+  동시 previous 6회가 세 왕복으로 처리되는지도 확인한다.
 - Shift 쌍 이동은 이전 위치 파일을 바꾸지 않는지 확인한다.
 - 이동 검사에서는 같은 목적지 반복도 확인한다. 단일 이동에는 floating과
   일반 fullscreen 사례를 포함하고, 포인터를 출발 창 위에 놓은 뒤 상태가 유지되는지도 확인한다.
