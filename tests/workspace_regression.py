@@ -252,8 +252,8 @@ def switching(desktop):
                 before = {t: v[0] for t, v in desktop.locations().items()}
                 key = f'F{n}' if side == 'left' else str(n % 10)
                 desktop.keys.press(key, numlock=numlock)
-                # First remapping step: main 1 switches the pair; other numbers stay right-only.
-                if side == 'right' and n == 1:
+                # Main number keys switch pairs; function keys switch only the left workspace.
+                if side == 'right':
                     views = {s: workspace(s, n) for s in ('left', 'right')}
                 else:
                     views[side] = workspace(side, n)
@@ -264,16 +264,27 @@ def switching(desktop):
                 count += 1
         for n, code in enumerate(KEYPAD, 1):
             before = {t: v[0] for t, v in desktop.locations().items()}
-            # Keypad 1 is right-only now; the remaining keypad keys still switch pairs.
+            # All keypad keys switch only the right workspace.
             left = next(w['name'] for w in desktop.ipc('get_workspaces')
                         if w['visible'] and w['output'] == 'fake-0')
-            target = {left, workspace('right', 1)} if n == 1 else {workspace(s, n) for s in ('left', 'right')}
+            target = {left, workspace('right', n)}
             desktop.keys.press(code, numlock=numlock)
             desktop.wait(lambda: desktop.visible() == target, 'keypad switch')
             require(next(w for w in desktop.ipc('get_workspaces') if w['focused'])['name']
                     == workspace('right', n), 'Keypad switch must focus right')
             require({t: v[0] for t, v in desktop.locations().items()} == before, 'Keypad switch moved windows')
             count += 1
+        for side in ('left', 'right'):
+            desktop.show(workspace(side, 2))
+        before = {t: v[0] for t, v in desktop.locations().items()}
+        for _ in range(2):
+            desktop.keys.press('grave', numlock=numlock)
+            desktop.wait(lambda: desktop.visible() == {workspace('left', 10), workspace('right', 10)},
+                         'grave alias for pair 10')
+            require(next(w for w in desktop.ipc('get_workspaces') if w['focused'])['name']
+                    == workspace('right', 10), 'Grave must focus right')
+        require({t: v[0] for t, v in desktop.locations().items()} == before, 'Grave moved windows')
+        count += 1
     return count
 
 
