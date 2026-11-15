@@ -252,18 +252,27 @@ def switching(desktop):
                 before = {t: v[0] for t, v in desktop.locations().items()}
                 key = f'F{n}' if side == 'left' else str(n % 10)
                 desktop.keys.press(key, numlock=numlock)
-                views[side] = workspace(side, n)
+                # First remapping step: main 1 switches the pair; other numbers stay right-only.
+                if side == 'right' and n == 1:
+                    views = {s: workspace(s, n) for s in ('left', 'right')}
+                else:
+                    views[side] = workspace(side, n)
                 desktop.wait(lambda: desktop.visible() == set(views.values()), key + ' switch')
                 require(next(w for w in desktop.ipc('get_workspaces') if w['focused'])['name']
                         == workspace(side, n), 'Wrong focused workspace')
                 require({t: v[0] for t, v in desktop.locations().items()} == before, 'Switch moved windows')
                 count += 1
         for n, code in enumerate(KEYPAD, 1):
+            before = {t: v[0] for t, v in desktop.locations().items()}
+            # Keypad 1 is right-only now; the remaining keypad keys still switch pairs.
+            left = next(w['name'] for w in desktop.ipc('get_workspaces')
+                        if w['visible'] and w['output'] == 'fake-0')
+            target = {left, workspace('right', 1)} if n == 1 else {workspace(s, n) for s in ('left', 'right')}
             desktop.keys.press(code, numlock=numlock)
-            target = {workspace(s, n) for s in ('left', 'right')}
-            desktop.wait(lambda: desktop.visible() == target, 'pair switch')
+            desktop.wait(lambda: desktop.visible() == target, 'keypad switch')
             require(next(w for w in desktop.ipc('get_workspaces') if w['focused'])['name']
-                    == workspace('right', n), 'Pair switch must focus right')
+                    == workspace('right', n), 'Keypad switch must focus right')
+            require({t: v[0] for t, v in desktop.locations().items()} == before, 'Keypad switch moved windows')
             count += 1
     return count
 

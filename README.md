@@ -4,6 +4,8 @@
 
 ## 작업 문서
 
+- [현재 진행 중: 숫자키·키패드 역할 교체](docs/keybinding-remap.md)
+
 - [듀얼 모니터 워크스페이스 개편 계획과 검수 기록](docs/dual-monitor-workspaces.md)
 - [사용자 검수용 기능 목록과 체크리스트](docs/workspace-review-checklist.md)
 
