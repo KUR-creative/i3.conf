@@ -4,6 +4,7 @@
 
 ## 작업 문서
 
+- [Print Screen 영역 캡처: Flameshot](docs/screenshots.md)
 - [검수 대기: Mod+백틱 전역 이전 창 복귀](docs/global-window-focus.md)
 
 - [ws CLI 사용법·로컬 링크 설치](docs/ws-cli.md)
