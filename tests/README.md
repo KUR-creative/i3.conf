@@ -44,7 +44,7 @@ python3 tests/workspace_regression.py --config /tmp/workspaces.conf
 ## 검사 내용
 
 메인 숫자는 쌍 전환·쌍별 마지막 포커스 복원·쌍 합류 이동, 키패드는 오른쪽 개별 전환·단일 창 이동이다.
-Alt+Tab의 전역 이전 창 복귀는 별도 검사한다. Mod+백틱은 미지정이다. Shift+백틱은 Shift+메인0과 같다.
+일반 백틱의 전역 이전 창 복귀는 별도 검사한다. Shift+백틱은 Shift+메인0과 같다.
 기대값은 운영 config에서 추출하지 않고 요구사항에 따라 정한다.
 
 - 숫자/F키 전환 40개 조합: Num Lock 두 상태, 숫자는 쌍 전환·F키는 왼쪽만 전환, 창은 이동하지 않음.
@@ -124,8 +124,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 tests/global_window_focus_regression.py --xvfb
 기본 하네스에서는 자동 시작을 비활성화한다. 전역 복귀 검사는 실제 자동 시작 문구를
 테스트 config에 추가한 뒤 reload만으로는 시작되지 않는지 확인하고, 같은 명령을
 i3 exec로 실행한다. 테스트가 추적기 수명을 직접 관리한다.
-실제 Alt+Tab 입력으로 같은 공간·다른 공간·다른 출력 왕복을 Num Lock 양쪽 상태에서 검사한다.
-Mod+백틱 입력이 포커스를 바꾸지 않는지도 확인한다.
+같은 공간·다른 공간·다른 출력 왕복을 Num Lock 양쪽 상태에서 검사한다.
 마우스 포커스, 빈 이력, 닫힌 대상 이후 회복, flock 중복 실행 거부,
 reload 이후 이력 유지와 ws JSON 보존도 검사한다.
 운영 시작 명령을 그대로 사용하며 실제 로그인 자동 시작은 사용자 검수 대상이다.

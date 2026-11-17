@@ -61,7 +61,7 @@ def run(config, xvfb):
             time.sleep(.06)
 
         def back(title, numlock=False):
-            desktop.keys.press('Tab', numlock=numlock, modifier='Alt_L')
+            desktop.keys.press('grave', numlock=numlock)
             desktop.wait(lambda: desktop.locations()[title][1]['focused'], 'return to ' + title)
             time.sleep(.1)
             require(desktop.locations()[title][1]['focused'], 'Return focus did not settle')
@@ -86,10 +86,6 @@ def run(config, xvfb):
                 focus(first)
                 focus(second)
                 locations = {title: name for title, (name, _) in desktop.locations().items()}
-                desktop.keys.press('grave', numlock=numlock)
-                time.sleep(.1)
-                require(desktop.locations()[second][1]['focused'],
-                        'Removed Mod+grave binding still changed focus')
                 back(first, numlock)
                 back(second, numlock)
                 require({title: name for title, (name, _) in desktop.locations().items()} == locations,
