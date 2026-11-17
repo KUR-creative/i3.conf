@@ -31,10 +31,18 @@ config.d/workspaces.conf에 다음을 둔다.
 exec_always --no-startup-id flock -n -F "$XDG_RUNTIME_DIR/i3-swap-focus.lock" ~/.local/bin/i3-swap-focus
 bindsym $mod+grave exec --no-startup-id pkill -USR1 -F "$XDG_RUNTIME_DIR/swap_focus.pid"
 ```
-exec_always는 첫 reload에서도 시작을 시도한다. flock -n은 이미 실행 중이면 종료하고,
+exec_always는 로그인·i3 재시작 때 실행된다. reload는 설정만 다시 읽으므로
+새로 추가한 자동 시작 명령을 실행하지 않는다. flock -n은 이미 실행 중이면 종료하고,
 -F는 별도 flock 부모 프로세스 없이 프로그램이 잠금을 유지하게 한다.
 reload로 기존 추적기를 재시작하거나 이력을 초기화하지 않는다. 별도 systemd 서비스는 없다.
 flock은 util-linux, pkill은 procps의 기존 도구다.
+
+현재 세션에 처음 적용할 때는 설정을 reload한 다음 추적기도 한 번 시작한다:
+```bash
+i3-msg reload
+i3-msg 'exec --no-startup-id flock -n -F "$XDG_RUNTIME_DIR/i3-swap-focus.lock" ~/.local/bin/i3-swap-focus'
+```
+이후 로그인에서는 자동 시작된다. 실행 중인 추적기는 reload해도 계속 실행된다.
 
 ## 상태와 한계
 - 직전 두 창의 컨테이너 ID는 추적기 메모리에만 있다. 로그아웃·재부팅·프로세스 종료 시 사라진다.
@@ -47,7 +55,8 @@ flock은 util-linux, pkill은 procps의 기존 도구다.
 - 마우스가 지나간 창과 쌍 전환 중간의 포커스 이벤트도 기록한다. 사용자 의도를 추측하지 않는다.
 
 ## 검증
-자동 검사는 tests/global_window_focus_regression.py에서 설치된 프로그램을 직접 실행한다.
+자동 검사는 tests/global_window_focus_regression.py에서 설정의 실제 시작 명령을
+격리 i3의 exec로 실행한다. 최초 reload만으로는 시작되지 않는 것도 검사한다.
 같은 공간·다른 공간·다른 출력 왕복, Num Lock 두 상태, 마우스 포커스,
 빈 이력·닫힌 대상·중복 시작·reload 이후 왕복과 ws JSON 보존을 확인한다.
 테스트 프로세스는 격리된 Xvfb·i3와 전용 runtime을 사용한다.
@@ -55,9 +64,15 @@ flock은 util-linux, pkill은 procps의 기존 도구다.
 실패용 설정과 실행기는 저장소에 보존하지 않는다.
 
 사용자 검수:
-1. i3-msg reload를 실행한다.
+1. 처음 적용할 때는 위 reload와 추적기 시작 명령을 모두 실행한다.
 2. F1의 창 A를 포커스하고 다른 공간의 창 B를 포커스한다.
 3. Mod+백틱을 두 번 눌러 A → B로 왕복하는지 확인한다.
 4. 같은 공간의 두 창과 마우스로 바꾼 포커스도 확인한다.
 5. Mod+0·Mod+Tab·Mod+Shift+백틱이 기존 역할을 유지하는지 확인한다.
 6. reload 후 다시 왕복하고, 재로그인 후 두 창을 포커스하여 새 이력을 확인한다.
+
+## 최초 적용 실패 수정
+2026-11-17 사용자 검수에서 복귀가 작동하지 않았다. 실제 세션에는 추적기와 PID 파일이
+없었고 로그에는 pkill: pidfile not valid가 있었다. reload로 exec_always도 실행된다는
+안내가 잘못되었다. 기존 검사는 추적기를 별도로 실행해 이 설치 절차의 누락을 검출하지 못했다.
+현재 세션의 추적기를 명시적으로 시작했고, 문서와 회귀 검사를 위 절차로 수정했다.

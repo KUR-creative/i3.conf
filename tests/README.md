@@ -121,8 +121,10 @@ X11 키 수신용 xev 창으로 Ctrl+Shift+N을 검증하므로 사용자의 실
 PYTHONDONTWRITEBYTECODE=1 python3 tests/global_window_focus_regression.py --xvfb /path/to/Xvfb
 ```
 위 가상 i3 의존성과 pipx로 설치한 ~/.local/bin/i3-swap-focus가 필요하다.
-설정의 자동 시작은 테스트 하네스에서 비활성화하고 테스트가 추적기 수명을 직접 관리한다.
+기본 하네스에서는 자동 시작을 비활성화한다. 전역 복귀 검사는 실제 자동 시작 문구를
+테스트 config에 추가한 뒤 reload만으로는 시작되지 않는지 확인하고, 같은 명령을
+i3 exec로 실행한다. 테스트가 추적기 수명을 직접 관리한다.
 같은 공간·다른 공간·다른 출력 왕복을 Num Lock 양쪽 상태에서 검사한다.
 마우스 포커스, 빈 이력, 닫힌 대상 이후 회복, flock 중복 실행 거부,
 reload 이후 이력 유지와 ws JSON 보존도 검사한다.
-운영 자동 시작 문구의 존재를 별도로 확인하며 실제 로그인 자동 시작은 사용자 검수 대상이다.
+운영 시작 명령을 그대로 사용하며 실제 로그인 자동 시작은 사용자 검수 대상이다.

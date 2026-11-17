@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Exercise the installed i3-swap-focus against an isolated i3 session."""
 import argparse
+from contextlib import contextmanager
+import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import time
 
@@ -12,18 +15,44 @@ from workspace_regression import CONFIG, Desktop, require, workspace
 WATCHER = Path.home() / '.local/bin/i3-swap-focus'
 
 
+@contextmanager
+def start_watcher(desktop, config):
+    startup = [line for line in config.read_text().splitlines()
+               if line.startswith('exec_always ') and 'i3-swap-focus' in line]
+    require(len(startup) == 1, 'Expected one watcher startup command')
+    pid_file = Path(desktop.env['XDG_RUNTIME_DIR']) / 'swap_focus.pid'
+    # Reproduce first installation: reload reads the new directive but does not run it.
+    with (desktop.root / 'config').open('a') as stream:
+        stream.write('\n' + startup[0] + '\n')
+    desktop.command('reload')
+    time.sleep(.2)
+    require(not pid_file.exists(), 'Reload unexpectedly started the watcher')
+    print('PASS: first reload alone does not start the new watcher', flush=True)
+    pid = None
+    try:
+        # Use the configured shell command through i3, as for applying it to a live session.
+        desktop.command(startup[0].replace('exec_always ', 'exec ', 1))
+        desktop.wait(lambda: pid_file.exists() and pid_file.read_text().strip().isdigit(),
+                     'watcher PID')
+        pid = int(pid_file.read_text())
+        time.sleep(.2)
+        require(Path(f'/proc/{pid}').exists(), 'Watcher exited during startup')
+        yield pid
+    finally:
+        if pid is not None:
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+
+
 def run(config, xvfb):
     require('exec_always --no-startup-id flock -n -F "$XDG_RUNTIME_DIR/i3-swap-focus.lock" '
             '~/.local/bin/i3-swap-focus' in config.read_text(), 'Missing guarded startup')
-    with Desktop(config, xvfb, 4) as desktop:
+    with Desktop(config, xvfb, 4) as desktop, start_watcher(desktop, config) as watcher_pid:
         runtime = Path(desktop.env['XDG_RUNTIME_DIR'])
         pid_file = runtime / 'swap_focus.pid'
         guard = ['flock', '-n', '-F', str(runtime / 'i3-swap-focus.lock'), str(WATCHER)]
-        watcher = desktop.launch(guard)
-        desktop.wait(lambda: pid_file.exists() and pid_file.read_text().strip().isdigit(), 'watcher PID')
-        require(int(pid_file.read_text()) == watcher.pid, 'Watcher was not launched in test runtime')
-        # Upstream writes its PID before asynchronously subscribing to focus events.
-        time.sleep(.2)
         before_history = desktop.history()
 
         def focus(title):
@@ -79,7 +108,7 @@ def run(config, xvfb):
         require(result.returncode == 1, 'Second watcher was not rejected by flock')
         desktop.command('reload')
         time.sleep(.2)
-        require(watcher.poll() is None and int(pid_file.read_text()) == watcher.pid,
+        require(Path(f'/proc/{watcher_pid}').exists() and int(pid_file.read_text()) == watcher_pid,
                 'Reload replaced or stopped the watcher')
         focus('left-source')
         focus('right-existing')
@@ -93,7 +122,7 @@ def run(config, xvfb):
         desktop.wait(lambda: 'left-source' not in desktop.locations(), 'closed prior target')
         desktop.ids.pop('left-source')
         back('right-existing')
-        require(watcher.poll() is None, 'Closed target terminated watcher')
+        require(Path(f'/proc/{watcher_pid}').exists(), 'Closed target terminated watcher')
         focus('left-existing')
         focus('right-existing')
         back('left-existing')
