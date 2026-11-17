@@ -240,9 +240,9 @@ class Keyboard:
         require(code, f'Unknown keysym: {symbol}')
         return code
 
-    def press(self, key, shift=False, numlock=False):
+    def press(self, key, shift=False, numlock=False, modifier='Super_L'):
         self.x.XkbLockModifiers(self.display, 0x100, 16, 16 if numlock else 0)
-        codes = [self.code('Super_L')]
+        codes = [self.code(modifier)]
         if shift:
             codes.append(self.code('Shift_L'))
         codes.append(key if isinstance(key, int) else self.code(key))

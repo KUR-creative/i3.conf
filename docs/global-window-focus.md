@@ -1,12 +1,13 @@
-# Mod+백틱으로 전역 이전 창 복귀
+# Alt+Tab으로 전역 이전 창 복귀
 ## 상태
 i3-swap-focus 0.4.7을 pipx로 설치한 것을 확인하고 자동 시작과 단축키를 연결했다.
 격리된 i3에서 검사하며 실제 세션의 reload·사용자 검수는 별도로 진행한다.
 
 ## 동작
-- Mod+백틱은 워크스페이스·모니터와 관계없이 직전에 포커스했던 창으로 돌아간다.
+- Alt+Tab은 워크스페이스·모니터와 관계없이 직전에 포커스했던 창으로 돌아간다.
 - 다시 누르면 방금 떠난 창으로 돌아간다. 전체 이력을 순환하는 기능은 아니다.
 - 대상 공간만 표시하며 반대 모니터를 정규 쌍으로 맞추지 않는다.
+- Mod+백틱은 바인딩을 제거한다.
 - Mod+Tab은 기존 이전 정규 쌍 복원, Mod+0은 F10+0 쌍 전환을 유지한다.
 - Mod+Shift+백틱은 기존 Mod+Shift+0의 레이아웃 묶음 이동을 유지한다.
 - 전역 복귀 자체는 ws의 JSON을 변경하지 않는다.
@@ -29,7 +30,7 @@ pipx가 프로그램과 i3ipc 의존성을 전용 가상 환경에 설치하고 
 config.d/workspaces.conf에 다음을 둔다.
 ```i3
 exec_always --no-startup-id flock -n -F "$XDG_RUNTIME_DIR/i3-swap-focus.lock" ~/.local/bin/i3-swap-focus
-bindsym $mod+grave exec --no-startup-id pkill -USR1 -F "$XDG_RUNTIME_DIR/swap_focus.pid"
+bindsym Mod1+Tab exec --no-startup-id pkill -USR1 -F "$XDG_RUNTIME_DIR/swap_focus.pid"
 ```
 exec_always는 로그인·i3 재시작 때 실행된다. reload는 설정만 다시 읽으므로
 새로 추가한 자동 시작 명령을 실행하지 않는다. flock -n은 이미 실행 중이면 종료하고,
@@ -66,7 +67,7 @@ i3-msg 'exec --no-startup-id flock -n -F "$XDG_RUNTIME_DIR/i3-swap-focus.lock" ~
 사용자 검수:
 1. 처음 적용할 때는 위 reload와 추적기 시작 명령을 모두 실행한다.
 2. F1의 창 A를 포커스하고 다른 공간의 창 B를 포커스한다.
-3. Mod+백틱을 두 번 눌러 A → B로 왕복하는지 확인한다.
+3. Alt+Tab을 두 번 눌러 A → B로 왕복하는지 확인한다.
 4. 같은 공간의 두 창과 마우스로 바꾼 포커스도 확인한다.
 5. Mod+0·Mod+Tab·Mod+Shift+백틱이 기존 역할을 유지하는지 확인한다.
 6. reload 후 다시 왕복하고, 재로그인 후 두 창을 포커스하여 새 이력을 확인한다.
@@ -76,3 +77,9 @@ i3-msg 'exec --no-startup-id flock -n -F "$XDG_RUNTIME_DIR/i3-swap-focus.lock" ~
 없었고 로그에는 pkill: pidfile not valid가 있었다. reload로 exec_always도 실행된다는
 안내가 잘못되었다. 기존 검사는 추적기를 별도로 실행해 이 설치 절차의 누락을 검출하지 못했다.
 현재 세션의 추적기를 명시적으로 시작했고, 문서와 회귀 검사를 위 절차로 수정했다.
+
+## 키 변경
+2026-11-17 전역 이전 창 복귀를 Alt+Tab으로 옮겼다. 기존 Alt+Tab의 이전 워크스페이스
+전환을 대체하고, Shift 없는 Mod+백틱은 비워 둔다. Mod+Tab의 이전 쌍 전환은 유지한다.
+실제 Alt+Tab 입력과 Mod+백틱의 무동작 검사를 통과했다. 변경 전 설정 사본에서는
+새 검사가 실패하는 것도 확인했다.
