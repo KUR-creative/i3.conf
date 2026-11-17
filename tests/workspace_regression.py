@@ -87,6 +87,9 @@ class Desktop:
             source = self.source.read_text().replace('DP-1', 'fake-0').replace('HDMI-0', 'fake-1')
             source = source.replace('~/.config/i3/scripts/workspace-pair.py', str(PAIR_SCRIPT))
             source = source.replace('~/.local/bin/ws', str(PAIR_SCRIPT))
+            # exec_always also runs with i3 -a. Tests own and clean up their helpers.
+            source = '\n'.join('# ' + line if line.startswith('exec_always ') else line
+                               for line in source.splitlines())
             config = self.root / 'config'
             config.write_text('font pango:monospace 8\nset $mod Mod4\n'
                               'fake-outputs 800x600+0+0,800x600+800+0\n'
@@ -296,13 +299,13 @@ def switching(desktop):
             desktop.show(workspace(side, 2))
         before = {t: v[0] for t, v in desktop.locations().items()}
         for _ in range(2):
-            desktop.keys.press('grave', numlock=numlock)
+            desktop.keys.press('0', numlock=numlock)
             desktop.wait(lambda: desktop.visible() == {workspace('left', 10), workspace('right', 10)},
-                         'grave alias for pair 10')
+                         'repeat pair 10')
             time.sleep(.1)
             require(next(w for w in desktop.ipc('get_workspaces') if w['focused'])['name']
-                    == workspace('right', 10), 'Grave must focus right')
-        require({t: v[0] for t, v in desktop.locations().items()} == before, 'Grave moved windows')
+                    == workspace('right', 10), 'Default pair 10 must focus right')
+        require({t: v[0] for t, v in desktop.locations().items()} == before, 'Pair switch moved windows')
         count += 1
     return count
 
@@ -519,7 +522,7 @@ def remembered_pairs(desktop):
                 desktop.check(expected, other + '-source',
                               {workspace(s, n) for s in ('left', 'right')})
                 count += 1
-    # A live legacy record is migrated on successful restore, then main/grave reuse its side.
+    # A live legacy record is migrated on successful restore, then main 0 reuses its side.
     for label, focus in [('F10', 'left-source'), ('0', 'right-source')]:
         for title, ws in [('left-source', workspace('left', 10)),
                           ('left-existing', workspace('left', 10)),
@@ -540,7 +543,7 @@ def remembered_pairs(desktop):
         require(saved['previous'] == '3' and saved['focus'][9] == label, 'Legacy migration lost focus')
         desktop.keys.press('3')
         desktop.check(expected, 'right-existing', {workspace(s, 3) for s in ('left', 'right')})
-        desktop.keys.press('grave')
+        desktop.keys.press('0')
         desktop.check(expected, focus, {workspace(s, 10) for s in ('left', 'right')})
         count += 1
     return count

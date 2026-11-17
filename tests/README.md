@@ -44,12 +44,12 @@ python3 tests/workspace_regression.py --config /tmp/workspaces.conf
 ## 검사 내용
 
 메인 숫자는 쌍 전환·쌍별 마지막 포커스 복원·쌍 합류 이동, 키패드는 오른쪽 개별 전환·단일 창 이동이다.
-백틱은 메인0의 별칭이며 Shift+백틱도 Shift+메인0과 같다.
+일반 백틱의 전역 이전 창 복귀는 별도 검사한다. Shift+백틱은 Shift+메인0과 같다.
 기대값은 운영 config에서 추출하지 않고 요구사항에 따라 정한다.
 
 - 숫자/F키 전환 40개 조합: Num Lock 두 상태, 숫자는 쌍 전환·F키는 왼쪽만 전환, 창은 이동하지 않음.
 - 키패드 전환 20개 조합: 오른쪽만 전환하고 왼쪽 유지.
-- 백틱 전환 2개 조합: F10+0 쌍 전환과 초기 오른쪽 포커스, 같은 키 반복.
+- 메인0 반복 전환 2개 조합: F10+0 쌍 전환과 초기 오른쪽 포커스, 같은 키 반복.
 - Shift 단일 이동 40개 조합(오른쪽은 키패드, 왼쪽은 F키): 같은/다른 모니터에서 출발, 대상 창만 이동,
   기존 창 보존, 원래 창 포커스, 반대 표시 공간 보존, 사용자 mark 보존 및 내부 mark 정리.
 - Shift 쌍 이동 22개 조합(메인 숫자 전체 및 Shift+백틱, Num Lock 두 상태): 양쪽 모든 창 합류, 기존 목적지 창 유지, 원래 창 포커스.
@@ -62,7 +62,7 @@ python3 tests/workspace_regression.py --config /tmp/workspaces.conf
   동시 previous 6회가 세 왕복으로 처리되는지도 확인한다.
 - 숫자키 쌍별 복원 42개 조합: 각 쌍의 좌우 기억, 여러 창 중 마지막 창,
   같은 쌍 재선택의 focus 갱신·previous 보존, Tab과 숫자의 상호 작용,
-  기존 F10/0 한 줄 기록의 JSON 전환과 백틱 복원.
+  기존 F10/0 한 줄 기록의 JSON 전환과 메인0 복원.
 - 기존 왕복·기록 검사는 각 사례를 기본 상태로 초기화해 쌍별 기억 검사와 분리한다.
 - 레이아웃 보존 8개 사례: 빈/기존 창이 있는 목적지의 splith·tabbed·stacking,
   중첩 구조·내부 percent·창 순서 보존, 사용자 mark·floating·fullscreen·포커스 보존,
@@ -115,3 +115,14 @@ X11 키 수신용 xev 창으로 Ctrl+Shift+N을 검증하므로 사용자의 실
 
 `--shortcuts /tmp/shortcuts.conf`로 임시 설정 사본도 검사할 수 있다.
 실제 Bash 경로 알림과 Ptyxis의 디렉터리 계승은 사용자 검수로 확인한다.
+
+## 전역 이전 창 복귀
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 tests/global_window_focus_regression.py --xvfb /path/to/Xvfb
+```
+위 가상 i3 의존성과 pipx로 설치한 ~/.local/bin/i3-swap-focus가 필요하다.
+설정의 자동 시작은 테스트 하네스에서 비활성화하고 테스트가 추적기 수명을 직접 관리한다.
+같은 공간·다른 공간·다른 출력 왕복을 Num Lock 양쪽 상태에서 검사한다.
+마우스 포커스, 빈 이력, 닫힌 대상 이후 회복, flock 중복 실행 거부,
+reload 이후 이력 유지와 ws JSON 보존도 검사한다.
+운영 자동 시작 문구의 존재를 별도로 확인하며 실제 로그인 자동 시작은 사용자 검수 대상이다.
