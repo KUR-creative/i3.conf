@@ -4,6 +4,8 @@
 
 ## 작업 문서
 
+- [설치 대기: Mod+백틱 전역 이전 창 복귀](docs/global-window-focus.md)
+
 - [ws CLI 사용법·로컬 링크 설치](docs/ws-cli.md)
 
 - [개인 앱 실행 단축키 분리](docs/application-shortcuts.md)
